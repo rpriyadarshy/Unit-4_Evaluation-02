@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Appointment Booking</title>
+    <link rel="stylesheet" href="index1.css">
+</head>
+<body>
+    <h1>Doctor Appointment Booking</h1>
+    <div id="auth">
+        <h2>Sign Up</h2>
+        <form id="signUpForm">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Sign Up</button>
+        </form>
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="text" id="loginUsername" placeholder="Username" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <div id="appointments">
+        <h2>Book Appointment</h2>
+        <form id="bookForm">
+            <input type="text" id="doctorName" placeholder="Doctor's Name" required>
+            <input type="datetime-local" id="appointmentTime" required>
+            <button type="submit">Book Appointment</button>
+        </form>
+        <h2>Appointments</h2>
+        <ul id="appointmentList"></ul>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLocalStorage();
+        });
+
+        function initializeLocalStorage() {
+            if (!localStorage.getItem('users')) {
+                localStorage.setItem('users', JSON.stringify([]));
+            }
+            if (!localStorage.getItem('appointments')) {
+                localStorage.setItem('appointments', JSON.stringify([]));
+            }
+        }
+
+        // Sign Up And Login Functionality
+
+
+        document.getElementById('signUpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            let users = JSON.parse(localStorage.getItem('users'));
+            if (users.find(user => user.username === username)) {
+                alert('Username already exists.');
+                return;
+            }
+
+            users.push({ username, password, role: 'Patient' });
+            localStorage.setItem('users', JSON.stringify(users));
+            alert('Sign Up Successful');
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            let users = JSON.parse(localStorage.getItem('users'));
+            let user = users.find(user => user.username === username && user.password === password);
+
+            if (user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('appointments').style.display = 'block';
+                loadAppointments();
+            } else {
+                alert('Invalid Username or Password');
+            }
+        });
+
+        // Booking Appointments
+
+
+        document.getElementById('bookForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const doctorName = document.getElementById('doctorName').value;
+            const appointmentTime = document.getElementById('appointmentTime').value;
+
+            let appointments = JSON.parse(localStorage.getItem('appointments'));
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+            if (appointments.find(appt => appt.doctorName === doctorName && appt.appointmentTime === appointmentTime)) {
+                alert('This slot is already booked.');
+                return;
+            }
+
+            appointments.push({ username: currentUser.username, doctorName, appointmentTime });
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            alert('Appointment Booked');
+            loadAppointments();
+        });
+
+        function loadAppointments() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            let appointments = JSON.parse(localStorage.getItem('appointments'));
+            const userAppointments = appointments.filter(appt => appt.username === currentUser.username);
+
+            const appointmentList = document.getElementById('appointmentList');
+            appointmentList.innerHTML = '';
+            userAppointments.forEach(appt => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Doctor: ${appt.doctorName}, Time: ${new Date(appt.appointmentTime).toLocaleString()}`;
+                appointmentList.appendChild(listItem);
+            });
+        }
+
+        // Alerts
+
+        function checkAppointments() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            let appointments = JSON.parse(localStorage.getItem('appointments'));
+            const userAppointments = appointments.filter(appt => appt.username === currentUser.username);
+
+            userAppointments.forEach(appt => {
+                const timeDifference = new Date(appt.appointmentTime) - new Date();
+                if (timeDifference <= 300000 && timeDifference > 0) {
+                    alert(`You have an appointment with Dr. ${appt.doctorName} in 5 minutes.`);
+                }
+            });
+        }
+
+        setInterval(checkAppointments, 300); 
+    </script>
+</body>
+</html>
